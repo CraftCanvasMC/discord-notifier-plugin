@@ -356,7 +356,7 @@ public class WebhookPublisher extends Notifier {
         );
 
         addDynamicFieldsToWebhook(dynamicFieldContainer, wh, env);
-        wh.setStatusByColor(resolveColor(buildresult, successColor, unstableColor, failureColor));
+        wh.setStatusByColor(resolveColor(buildresult, successColor, unstableColor, failureColor, listener));
 
         if (this.enableFooterInfo)
             wh.setFooter("Jenkins v" + build.getHudsonVersion() + ", " + getDescriptor().getDisplayName() + " v" + getDescriptor().getPluginVersion());
@@ -393,24 +393,37 @@ public class WebhookPublisher extends Notifier {
      * @param failureColor  custom hex/decimal color string for failed builds, or null/empty for default
      * @return the resolved integer color code
      */
-    private static int resolveColor(Result buildResult, String successColor, String unstableColor, String failureColor) {
+    private static int resolveColor(
+            Result buildResult,
+            String successColor,
+            String unstableColor,
+            String failureColor,
+            BuildListener listener
+    ) {
         String custom;
+        String customFieldName;
         DiscordWebhook.StatusColor defaultColor;
         if (buildResult.isBetterOrEqualTo(Result.SUCCESS)) {
             custom = successColor;
+            customFieldName = "successColor";
             defaultColor = DiscordWebhook.StatusColor.GREEN;
         } else if (buildResult.isWorseThan(Result.UNSTABLE)) {
             custom = failureColor;
+            customFieldName = "failureColor";
             defaultColor = DiscordWebhook.StatusColor.RED;
         } else {
             custom = unstableColor;
+            customFieldName = "unstableColor";
             defaultColor = DiscordWebhook.StatusColor.YELLOW;
         }
         if (custom != null && !custom.isEmpty()) {
             try {
                 return DiscordWebhook.parseColor(custom);
             } catch (NumberFormatException e) {
-                // fall back to default
+                listener.getLogger().println(
+                        "[Discord Notifier] Invalid " + customFieldName + " value '" + custom
+                                + "'. Using default color."
+                );
             }
         }
         return (int) defaultColor.getCode();

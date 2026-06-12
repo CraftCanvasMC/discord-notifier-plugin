@@ -283,7 +283,7 @@ public class DiscordPipelineStep extends AbstractStepImpl {
                 listener.getLogger().println(step.getResult() + " is not a valid result");
             }
 
-            int resolvedColor = resolveColor(statusColor,
+            int resolvedColor = resolveColor(listener, statusColor,
                     step.getSuccessColor(), step.getUnstableColor(),
                     step.getFailureColor(), step.getAbortedColor());
 
@@ -381,22 +381,43 @@ public class DiscordPipelineStep extends AbstractStepImpl {
          * @param abortedColor  custom hex/decimal color string for aborted builds, or null/empty for default
          * @return the resolved integer color code
          */
-        private static int resolveColor(DiscordWebhook.StatusColor defaultColor,
+        private static int resolveColor(
+                TaskListener listener,
+                DiscordWebhook.StatusColor defaultColor,
                 String successColor, String unstableColor,
                 String failureColor, String abortedColor) {
             String custom;
+            String customFieldName;
             switch (defaultColor) {
-                case GREEN:  custom = successColor;  break;
-                case YELLOW: custom = unstableColor; break;
-                case RED:    custom = failureColor;  break;
-                case GREY:   custom = abortedColor;  break;
-                default:     custom = null;          break;
+                case GREEN:
+                    custom = successColor;
+                    customFieldName = "successColor";
+                    break;
+                case YELLOW:
+                    custom = unstableColor;
+                    customFieldName = "unstableColor";
+                    break;
+                case RED:
+                    custom = failureColor;
+                    customFieldName = "failureColor";
+                    break;
+                case GREY:
+                    custom = abortedColor;
+                    customFieldName = "abortedColor";
+                    break;
+                default:
+                    custom = null;
+                    customFieldName = "color";
+                    break;
             }
             if (custom != null && !custom.isEmpty()) {
                 try {
                     return DiscordWebhook.parseColor(custom);
                 } catch (NumberFormatException e) {
-                    // fall back to default
+                    listener.getLogger().println(
+                            "[Discord Notifier] Invalid " + customFieldName + " value '" + custom
+                                    + "'. Using default color."
+                    );
                 }
             }
             return (int) defaultColor.getCode();

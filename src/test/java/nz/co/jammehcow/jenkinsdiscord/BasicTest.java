@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BasicTest {
@@ -58,7 +59,17 @@ class BasicTest {
         NumberFormatException ex = assertThrows(NumberFormatException.class,
                 () -> DiscordWebhook.parseColor("not-a-color"));
         // Verify message mentions the original input
-        assert ex.getMessage().contains("not-a-color");
+        assertTrue(ex.getMessage().contains("not-a-color"));
+    }
+
+    @Test
+    void parseColorSixDigitNumericWithoutHashInterpretedAsHex() {
+        assertEquals(0x123456, DiscordWebhook.parseColor("123456"));
+    }
+
+    @Test
+    void parseColorOutOfRangeThrows() {
+        assertThrows(NumberFormatException.class, () -> DiscordWebhook.parseColor("16777216"));
     }
 
     @Test

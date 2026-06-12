@@ -58,7 +58,7 @@ class DiscordWebhook {
 
     /**
      * Parses a color string into an integer color code.
-     * Accepts hex strings with or without a leading '#' (e.g. "#19A959" or "19A959"),
+     * Accepts hex strings with or without a leading '#' (e.g. "#19A719" or "19A719"),
      * as well as plain decimal integers (e.g. "1681177").
      *
      * @param colorStr the color string to parse
@@ -67,19 +67,24 @@ class DiscordWebhook {
      */
     static int parseColor(String colorStr) {
         String s = colorStr.trim();
-        if (s.startsWith("#")) {
-            return Integer.parseInt(s.substring(1), 16);
-        }
+        int parsed;
         try {
-            return Integer.parseInt(s);
-        } catch (NumberFormatException decimalEx) {
-            try {
-                return Integer.parseInt(s, 16);
-            } catch (NumberFormatException hexEx) {
-                throw new NumberFormatException(
-                        "Cannot parse '" + colorStr + "' as a color code (tried decimal and hex)");
+            if (s.startsWith("#")) {
+                parsed = Integer.parseInt(s.substring(1), 16);
+            } else if (s.matches("[0-9A-Fa-f]{6}")) {
+                parsed = Integer.parseInt(s, 16);
+            } else {
+                parsed = Integer.parseInt(s);
             }
+        } catch (NumberFormatException e) {
+            throw new NumberFormatException("Cannot parse '" + colorStr + "' as a color code");
         }
+
+        if (parsed < 0 || parsed > 0xFFFFFF) {
+            throw new NumberFormatException("Color '" + colorStr + "' is out of range (0..16777215)");
+        }
+
+        return parsed;
     }
 
     /**

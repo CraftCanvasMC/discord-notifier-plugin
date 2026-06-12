@@ -66,6 +66,14 @@ Discord Notifier supports Jenkins Pipeline. The only required parameter is webho
 	- The text in footer of the message.
 - result
     - Sets the left side colour of the embed (SUCCESS - green, UNSTABLE - yellow, FAILURE - red, ABORTED - grey).
+- successColor
+    - Optional custom color for SUCCESS status. Accepts `#RRGGBB`, `RRGGBB`, or decimal.
+- unstableColor
+    - Optional custom color for UNSTABLE status. Accepts `#RRGGBB`, `RRGGBB`, or decimal.
+- failureColor
+    - Optional custom color for FAILURE status. Accepts `#RRGGBB`, `RRGGBB`, or decimal.
+- abortedColor
+    - Optional custom color for ABORTED status. Accepts `#RRGGBB`, `RRGGBB`, or decimal.
 
 ### Example
 
