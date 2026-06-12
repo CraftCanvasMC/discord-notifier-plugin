@@ -55,6 +55,10 @@ public class WebhookPublisher extends Notifier {
     private static final String NAME = "Discord Notifier";
     private static final String SHORT_NAME = "discord-notifier";
     private final String scmWebUrl;
+    private String successColor;
+    private String unstableColor;
+    private String failureColor;
+    private String abortedColor;
 
     @DataBoundConstructor
     public WebhookPublisher(
@@ -171,6 +175,42 @@ public class WebhookPublisher extends Notifier {
         return this.scmWebUrl;
     }
 
+    public String getSuccessColor() {
+        return this.successColor;
+    }
+
+    @DataBoundSetter
+    public void setSuccessColor(String successColor) {
+        this.successColor = successColor;
+    }
+
+    public String getUnstableColor() {
+        return this.unstableColor;
+    }
+
+    @DataBoundSetter
+    public void setUnstableColor(String unstableColor) {
+        this.unstableColor = unstableColor;
+    }
+
+    public String getFailureColor() {
+        return this.failureColor;
+    }
+
+    @DataBoundSetter
+    public void setFailureColor(String failureColor) {
+        this.failureColor = failureColor;
+    }
+
+    public String getAbortedColor() {
+        return this.abortedColor;
+    }
+
+    @DataBoundSetter
+    public void setAbortedColor(String abortedColor) {
+        this.abortedColor = abortedColor;
+    }
+
     @Override
     public boolean needsToRunAfterFinalized() {
         return true;
@@ -264,12 +304,8 @@ public class WebhookPublisher extends Notifier {
             wh.setFile(build.getLogInputStream(), "build" + build.getNumber() + ".log");
         }
 
-        DiscordWebhook.StatusColor statusColor = DiscordWebhook.StatusColor.GREEN;
         Result buildresult = build.getResult();
         if (!buildresult.isCompleteBuild()) return true;
-        if (buildresult.isBetterOrEqualTo(Result.SUCCESS)) statusColor = DiscordWebhook.StatusColor.GREEN;
-        if (buildresult.isWorseThan(Result.SUCCESS)) statusColor = DiscordWebhook.StatusColor.YELLOW;
-        if (buildresult.isWorseThan(Result.UNSTABLE)) statusColor = DiscordWebhook.StatusColor.RED;
 
         AbstractProject project = build.getProject();
         StringBuilder combinationString = new StringBuilder();
@@ -330,7 +366,7 @@ public class WebhookPublisher extends Notifier {
         );
 
         addDynamicFieldsToWebhook(dynamicFieldContainer, wh, env);
-        wh.setStatus(statusColor);
+        wh.setStatusByColor(resolveColor(buildresult, successColor, unstableColor, failureColor));
 
         if (this.enableFooterInfo)
             wh.setFooter("Jenkins v" + build.getHudsonVersion() + ", " + getDescriptor().getDisplayName() + " v" + getDescriptor().getPluginVersion());
@@ -355,6 +391,33 @@ public class WebhookPublisher extends Notifier {
         }
         // Go through all fields and add them to the webhook
         dynamicFieldContainer.getFields().forEach(pair -> wh.addField(pair.getKey() + ":", env.expand(pair.getValue())));
+    }
+
+    /**
+     * Resolves the integer color code to use for the embed.
+     * Uses the provided custom color string when non-empty; falls back to the default StatusColor.
+     */
+    private static int resolveColor(Result buildResult, String successColor, String unstableColor, String failureColor) {
+        String custom;
+        DiscordWebhook.StatusColor defaultColor;
+        if (buildResult.isBetterOrEqualTo(Result.SUCCESS)) {
+            custom = successColor;
+            defaultColor = DiscordWebhook.StatusColor.GREEN;
+        } else if (buildResult.isWorseThan(Result.UNSTABLE)) {
+            custom = failureColor;
+            defaultColor = DiscordWebhook.StatusColor.RED;
+        } else {
+            custom = unstableColor;
+            defaultColor = DiscordWebhook.StatusColor.YELLOW;
+        }
+        if (custom != null && !custom.isEmpty()) {
+            try {
+                return DiscordWebhook.parseColor(custom);
+            } catch (NumberFormatException e) {
+                // fall back to default
+            }
+        }
+        return (int) defaultColor.getCode();
     }
 
     public BuildStepMonitor getRequiredMonitorService() {

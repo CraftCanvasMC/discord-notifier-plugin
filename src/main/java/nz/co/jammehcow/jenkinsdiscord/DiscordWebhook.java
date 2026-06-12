@@ -45,10 +45,35 @@ class DiscordWebhook {
          * Grey. Just grey.
          */
         GREY(13487565);
-        private long code;
+        private final long code;
 
         StatusColor(int code) {
             this.code = code;
+        }
+
+        public long getCode() {
+            return code;
+        }
+    }
+
+    /**
+     * Parses a color string into an integer color code.
+     * Accepts hex strings with or without a leading '#' (e.g. "#19A959" or "19A959"),
+     * as well as plain decimal integers (e.g. "1681177").
+     *
+     * @param colorStr the color string to parse
+     * @return the integer color code
+     * @throws NumberFormatException if the string cannot be parsed as a color
+     */
+    static int parseColor(String colorStr) {
+        String s = colorStr.trim();
+        if (s.startsWith("#")) {
+            return Integer.parseInt(s.substring(1), 16);
+        }
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return Integer.parseInt(s, 16);
         }
     }
 
@@ -111,11 +136,22 @@ class DiscordWebhook {
     /**
      * Sets the build status (for the embed's color).
      *
-     * @param isSuccess if the build is successful
+     * @param color the status color
      * @return this
      */
-    public DiscordWebhook setStatus(StatusColor isSuccess) {
-        this.embed.put("color", isSuccess.code);
+    public DiscordWebhook setStatus(StatusColor color) {
+        this.embed.put("color", color.getCode());
+        return this;
+    }
+
+    /**
+     * Sets the embed color directly using a raw integer color code.
+     *
+     * @param colorCode the integer color code
+     * @return this
+     */
+    public DiscordWebhook setStatusByColor(int colorCode) {
+        this.embed.put("color", colorCode);
         return this;
     }
 
