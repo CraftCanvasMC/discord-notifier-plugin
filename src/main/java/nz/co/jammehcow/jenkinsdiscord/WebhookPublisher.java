@@ -384,8 +384,14 @@ public class WebhookPublisher extends Notifier {
     }
 
     /**
-     * Resolves the integer color code to use for the embed.
-     * Uses the provided custom color string when non-empty; falls back to the default StatusColor.
+     * Resolves the integer color code to use for the embed based on the build result.
+     * Uses the provided custom color string when non-empty and parseable; falls back to the default.
+     *
+     * @param buildResult   the build result used to select the appropriate color bucket
+     * @param successColor  custom hex/decimal color string for successful builds, or null/empty for default
+     * @param unstableColor custom hex/decimal color string for unstable builds, or null/empty for default
+     * @param failureColor  custom hex/decimal color string for failed builds, or null/empty for default
+     * @return the resolved integer color code
      */
     private static int resolveColor(Result buildResult, String successColor, String unstableColor, String failureColor) {
         String custom;

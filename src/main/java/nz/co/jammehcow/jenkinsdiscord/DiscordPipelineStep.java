@@ -370,7 +370,16 @@ public class DiscordPipelineStep extends AbstractStepImpl {
 
         /**
          * Resolves the integer color code to use for the embed.
-         * Uses the provided custom color string matching the given default status; falls back to the default.
+         * Maps the given default {@link DiscordWebhook.StatusColor} to the matching custom color string
+         * and returns its parsed integer value. Falls back to the default color code when the custom
+         * string is null, empty, or cannot be parsed.
+         *
+         * @param defaultColor  the status color determined by the build result
+         * @param successColor  custom hex/decimal color string for successful builds, or null/empty for default
+         * @param unstableColor custom hex/decimal color string for unstable builds, or null/empty for default
+         * @param failureColor  custom hex/decimal color string for failed builds, or null/empty for default
+         * @param abortedColor  custom hex/decimal color string for aborted builds, or null/empty for default
+         * @return the resolved integer color code
          */
         private static int resolveColor(DiscordWebhook.StatusColor defaultColor,
                 String successColor, String unstableColor,
