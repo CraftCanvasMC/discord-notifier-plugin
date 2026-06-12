@@ -17,6 +17,11 @@ class EmbedDescriptionTest {
     }
 
     @Test
+    void preservesEmptyCommitId() {
+        assertEquals("", EmbedDescription.getCommitDisplayStr(""));
+    }
+
+    @Test
     void preservesNullPlaceholder() {
         assertEquals("null  ", EmbedDescription.getCommitDisplayStr(null));
     }
