@@ -356,7 +356,7 @@ public class WebhookPublisher extends Notifier {
         );
 
         addDynamicFieldsToWebhook(dynamicFieldContainer, wh, env);
-        wh.setStatusByColor(resolveColor(buildresult, successColor, unstableColor, failureColor, listener));
+        wh.setStatusByColor(resolveColor(listener, buildresult, successColor, unstableColor, failureColor));
 
         if (this.enableFooterInfo)
             wh.setFooter("Jenkins v" + build.getHudsonVersion() + ", " + getDescriptor().getDisplayName() + " v" + getDescriptor().getPluginVersion());
@@ -394,11 +394,11 @@ public class WebhookPublisher extends Notifier {
      * @return the resolved integer color code
      */
     private static int resolveColor(
+            BuildListener listener,
             Result buildResult,
             String successColor,
             String unstableColor,
-            String failureColor,
-            BuildListener listener
+            String failureColor
     ) {
         String custom;
         String customFieldName;

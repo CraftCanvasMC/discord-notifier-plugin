@@ -407,7 +407,7 @@ public class DiscordPipelineStep extends AbstractStepImpl {
                     break;
                 default:
                     custom = null;
-                    customFieldName = "color";
+                    customFieldName = "defaultColor";
                     break;
             }
             if (custom != null && !custom.isEmpty()) {

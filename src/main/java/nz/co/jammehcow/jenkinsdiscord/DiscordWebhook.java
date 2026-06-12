@@ -11,6 +11,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.InputStream;
+import java.util.regex.Pattern;
 
 /**
  * Author: jammehcow.
@@ -27,6 +28,7 @@ class DiscordWebhook {
     static final int TITLE_LIMIT = 256;
     static final int DESCRIPTION_LIMIT = 2048;
     static final int FOOTER_LIMIT = 2048;
+    private static final Pattern SIX_DIGIT_HEX_COLOR = Pattern.compile("[0-9A-Fa-f]{6}");
 
     enum StatusColor {
         /**
@@ -71,7 +73,7 @@ class DiscordWebhook {
         try {
             if (s.startsWith("#")) {
                 parsed = Integer.parseInt(s.substring(1), 16);
-            } else if (s.matches("[0-9A-Fa-f]{6}")) {
+            } else if (SIX_DIGIT_HEX_COLOR.matcher(s).matches()) {
                 parsed = Integer.parseInt(s, 16);
             } else {
                 parsed = Integer.parseInt(s);
