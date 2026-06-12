@@ -23,6 +23,6 @@ class EmbedDescriptionTest {
 
     @Test
     void preservesNullPlaceholder() {
-        assertEquals("null  ", EmbedDescription.getCommitDisplayStr(null));
+        assertEquals(EmbedDescription.nullCommitDisplayStr, EmbedDescription.getCommitDisplayStr(null));
     }
 }

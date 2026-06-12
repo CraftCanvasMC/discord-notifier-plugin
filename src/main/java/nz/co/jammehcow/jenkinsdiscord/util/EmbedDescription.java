@@ -20,7 +20,7 @@ import org.apache.commons.lang.StringUtils;
 
 public class EmbedDescription {
     private static final int maxEmbedStringLength = 2048; // The maximum length of an embed description.
-    private static final String nullCommitDisplayStr = "null  ";
+    static final String nullCommitDisplayStr = "null  ";
 
     private LinkedList<String> changesList = new LinkedList<>();
     private LinkedList<String> artifactsList = new LinkedList<>();
