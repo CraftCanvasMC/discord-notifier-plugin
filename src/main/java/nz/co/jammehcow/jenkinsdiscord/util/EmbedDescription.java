@@ -60,10 +60,7 @@ public class EmbedDescription {
                     ChangeLogSet.Entry entry = (ChangeLogSet.Entry) o;
 
                     String commitID = entry.getCommitId();
-                    String commitDisplayStr;
-                    if (commitID == null) commitDisplayStr = "null  ";
-                    else if (commitID.length() < 6) commitDisplayStr = commitID;
-                    else commitDisplayStr = commitID.substring(0, 6);
+                    String commitDisplayStr = getCommitDisplayStr(commitID);
 
                     String msg = entry.getMsg().trim();
                     int nl = msg.indexOf("\n");
@@ -134,6 +131,10 @@ public class EmbedDescription {
     @Override
     public String toString() {
         return this.finalDescription;
+    }
+
+    static String getCommitDisplayStr(String commitID) {
+        return commitID == null ? "null  " : commitID;
     }
 
     // https://support.discord.com/hc/en-us/articles/210298617
