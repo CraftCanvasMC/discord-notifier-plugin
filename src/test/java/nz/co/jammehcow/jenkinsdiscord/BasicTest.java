@@ -32,8 +32,6 @@ class BasicTest {
         });
     }
 
-    // --- parseColor tests ---
-
     @Test
     void parseColorHexWithHash() {
         assertEquals(0x19A959, DiscordWebhook.parseColor("#19A959"));
@@ -68,8 +66,6 @@ class BasicTest {
         assertThrows(NumberFormatException.class, () -> DiscordWebhook.parseColor("#ZZZZZZ"));
     }
 
-    // --- setStatusByColor tests ---
-
     @Test
     void setStatusByColorDoesntThrow() {
         assertDoesNotThrow(() -> {
@@ -77,8 +73,6 @@ class BasicTest {
             wh.setStatusByColor(0xFF0000);
         });
     }
-
-    // --- StatusColor default code tests ---
 
     @Test
     void statusColorGetCodeGreen() {
@@ -99,8 +93,6 @@ class BasicTest {
     void statusColorGetCodeGrey() {
         assertEquals(13487565L, DiscordWebhook.StatusColor.GREY.getCode());
     }
-
-    // --- Pipeline step custom color tests ---
 
     @Test
     void pipelineWithCustomColorsDoesntThrow() {

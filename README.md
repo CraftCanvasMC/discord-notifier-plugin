@@ -75,5 +75,9 @@ discordSend description: "Jenkins Pipeline Build",
             link: env.BUILD_URL,
             result: currentBuild.currentResult,
             title: env.JOB_NAME,
-            webhookURL: "Webhook URL"
+            webhookURL: "Webhook URL",
+            successColor: "#00C853",
+            failureColor: "#D50000",
+            unstableColor: "#FF6D00",
+            abortedColor: "#9E9E9E"
 ```
