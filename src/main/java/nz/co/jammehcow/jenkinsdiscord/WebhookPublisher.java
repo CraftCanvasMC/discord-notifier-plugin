@@ -58,7 +58,6 @@ public class WebhookPublisher extends Notifier {
     private String successColor;
     private String unstableColor;
     private String failureColor;
-    private String abortedColor;
 
     @DataBoundConstructor
     public WebhookPublisher(
@@ -200,15 +199,6 @@ public class WebhookPublisher extends Notifier {
     @DataBoundSetter
     public void setFailureColor(String failureColor) {
         this.failureColor = failureColor;
-    }
-
-    public String getAbortedColor() {
-        return this.abortedColor;
-    }
-
-    @DataBoundSetter
-    public void setAbortedColor(String abortedColor) {
-        this.abortedColor = abortedColor;
     }
 
     @Override

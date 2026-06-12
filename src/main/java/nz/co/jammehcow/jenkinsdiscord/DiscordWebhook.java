@@ -72,8 +72,13 @@ class DiscordWebhook {
         }
         try {
             return Integer.parseInt(s);
-        } catch (NumberFormatException e) {
-            return Integer.parseInt(s, 16);
+        } catch (NumberFormatException decimalEx) {
+            try {
+                return Integer.parseInt(s, 16);
+            } catch (NumberFormatException hexEx) {
+                throw new NumberFormatException(
+                        "Cannot parse '" + colorStr + "' as a color code (tried decimal and hex)");
+            }
         }
     }
 
