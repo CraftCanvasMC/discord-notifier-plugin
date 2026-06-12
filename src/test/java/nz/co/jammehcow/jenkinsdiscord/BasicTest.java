@@ -46,13 +46,13 @@ class BasicTest {
 
     @Test
     void parseColorDecimal() {
-        // 1681177 == 0x19A959 (GREEN default)
+        // 1681177 == 0x19A719 (GREEN default)
         assertEquals(1681177, DiscordWebhook.parseColor("1681177"));
     }
 
     @Test
     void parseColorHexDecimalEquivalent() {
-        assertEquals(DiscordWebhook.parseColor("1681177"), DiscordWebhook.parseColor("#19A959"));
+        assertEquals(DiscordWebhook.parseColor("1681177"), DiscordWebhook.parseColor("#19A719"));
     }
 
     @Test
