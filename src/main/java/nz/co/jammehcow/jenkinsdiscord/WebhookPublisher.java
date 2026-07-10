@@ -18,8 +18,8 @@ import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import java.io.IOException;
-import java.util.Locale;
-import java.util.Map;
+import java.time.Instant;
+import java.util.List;
 
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
@@ -40,61 +40,57 @@ public class WebhookPublisher extends Notifier {
     private final String branchName;
     private final String statusTitle;
     private final String thumbnailURL;
-    private final String notes;
+    private final String successRole;
     private final String customAvatarUrl;
     private final String customUsername;
     private DynamicFieldContainer dynamicFieldContainer;
     private final boolean sendOnStateChange;
     private final boolean sendOnlyFailed;
     private boolean enableUrlLinking;
-    private final boolean enableArtifactList;
     private final boolean enableFooterInfo;
     private boolean showChangeset;
     private boolean sendLogFile;
     private boolean sendStartNotification;
     private static final String NAME = "Discord Notifier";
     private static final String SHORT_NAME = "discord-notifier";
-    private final String scmWebUrl;
     private String successColor;
-    private String unstableColor;
+    private String abortedColor;
     private String failureColor;
 
     @DataBoundConstructor
     public WebhookPublisher(
-            String webhookURL,
-            String thumbnailURL,
-            boolean sendOnStateChange,
-            String statusTitle,
-            String notes,
-            String branchName,
-            String customAvatarUrl,
-            String customUsername,
-            boolean sendOnStateFailed,
-            boolean sendOnlyFailed,
-            boolean enableUrlLinking,
-            boolean enableArtifactList,
-            boolean enableFooterInfo,
-            boolean showChangeset,
-            boolean sendLogFile,
-            boolean sendStartNotification,
-            String scmWebUrl
+        String webhookURL,
+        String thumbnailURL,
+        boolean sendOnStateChange,
+        String statusTitle,
+        String successRole,
+        String branchName,
+        String customAvatarUrl,
+        String customUsername,
+        boolean sendOnStateFailed,
+        boolean sendOnlyFailed,
+        boolean enableUrlLinking,
+        boolean enableArtifactList,
+        boolean enableFooterInfo,
+        boolean showChangeset,
+        boolean sendLogFile,
+        boolean sendStartNotification,
+        String scmWebUrl
     ) {
         this.webhookURL = webhookURL;
         this.thumbnailURL = thumbnailURL;
         this.sendOnStateChange = sendOnStateChange;
         this.sendOnlyFailed = sendOnlyFailed;
         this.enableUrlLinking = enableUrlLinking;
-        this.enableArtifactList = enableArtifactList;
         this.enableFooterInfo = enableFooterInfo;
         this.showChangeset = showChangeset;
         this.branchName = branchName;
         this.statusTitle = statusTitle;
-        this.notes = notes;
+        this.successRole = successRole;
         this.customAvatarUrl = customAvatarUrl;
         this.customUsername = customUsername;
         this.sendLogFile = sendLogFile;
         this.sendStartNotification = sendStartNotification;
-        this.scmWebUrl = scmWebUrl;
     }
 
     public String getWebhookURL() {
@@ -119,7 +115,7 @@ public class WebhookPublisher extends Notifier {
 
     @DataBoundSetter
     public void setDynamicFieldContainer(String fieldsString) {
-      this.dynamicFieldContainer = DynamicFieldContainer.of(fieldsString);
+        this.dynamicFieldContainer = DynamicFieldContainer.of(fieldsString);
     }
 
     public String getDynamicFieldContainer() {
@@ -129,8 +125,8 @@ public class WebhookPublisher extends Notifier {
         return dynamicFieldContainer.toString();
     }
 
-    public String getNotes() {
-        return this.notes;
+    public String getSuccessRole() {
+        return this.successRole;
     }
 
     public String getThumbnailURL() {
@@ -151,7 +147,7 @@ public class WebhookPublisher extends Notifier {
     }
 
     public boolean isEnableArtifactList() {
-        return this.enableArtifactList;
+        return false;
     }
 
     public boolean isEnableFooterInfo() {
@@ -170,10 +166,6 @@ public class WebhookPublisher extends Notifier {
         return this.sendStartNotification;
     }
 
-    public String getScmWebUrl() {
-        return this.scmWebUrl;
-    }
-
     public String getSuccessColor() {
         return this.successColor;
     }
@@ -183,13 +175,13 @@ public class WebhookPublisher extends Notifier {
         this.successColor = successColor;
     }
 
-    public String getUnstableColor() {
-        return this.unstableColor;
+    public String getAbortedColor() {
+        return this.abortedColor;
     }
 
     @DataBoundSetter
-    public void setUnstableColor(String unstableColor) {
-        this.unstableColor = unstableColor;
+    public void setAbortedColor(String abortedColor) {
+        this.abortedColor = abortedColor;
     }
 
     public String getFailureColor() {
@@ -208,46 +200,6 @@ public class WebhookPublisher extends Notifier {
 
     @Override
     public boolean prebuild(AbstractBuild<?, ?> build, BuildListener listener) {
-        final EnvVars env;
-        listener.getLogger().println(sendStartNotification);
-        if (sendStartNotification) {
-            try {
-                env = build.getEnvironment(listener);
-                DiscordWebhook wh = new DiscordWebhook(env.expand(this.webhookURL));
-                AbstractProject project = build.getProject();
-                String description;
-                JenkinsLocationConfiguration globalConfig = JenkinsLocationConfiguration.get();
-                wh.setStatus(DiscordWebhook.StatusColor.GREEN);
-                if (this.statusTitle != null && !this.statusTitle.isEmpty()) {
-                    wh.setTitle("Build started: " + env.expand(this.statusTitle));
-                } else {
-                    wh.setTitle("Build started: " + project.getDisplayName() + " #" + build.getId());
-                }
-                String branchNameString = "";
-                if (branchName != null && !branchName.isEmpty()) {
-                    branchNameString = "**Branch:** " + env.expand(branchName) + "\n";
-                }
-                if (this.enableUrlLinking) {
-                    String url = globalConfig.getUrl() + build.getUrl();
-                    description = branchNameString
-                            + "**Build:** "
-                            + getMarkdownHyperlink(build.getId(), url);
-                    wh.setURL(url);
-                } else {
-                    description = branchNameString
-                            + "**Build:** "
-                            + build.getId();
-                }
-                wh.setDescription(new EmbedDescription(build, globalConfig, description, false, false, null).toString());
-
-                addDynamicFieldsToWebhook(dynamicFieldContainer, wh, env);
-
-                // Send the webhook
-                wh.send();
-            } catch (WebhookException | InterruptedException | IOException e1) {
-                e1.printStackTrace(listener.getLogger());
-            }
-        }
         return true;
     }
 
@@ -259,6 +211,11 @@ public class WebhookPublisher extends Notifier {
         JenkinsLocationConfiguration globalConfig = JenkinsLocationConfiguration.get();
         if (build.getResult() == null) {
             listener.getLogger().println("[Discord Notifier] build.getResult() is null!");
+            return true;
+        }
+
+        if (build.getResult().equals(hudson.model.Result.ABORTED)) {
+            // no sendy for abort
             return true;
         }
 
@@ -298,68 +255,43 @@ public class WebhookPublisher extends Notifier {
         if (!buildresult.isCompleteBuild()) return true;
 
         AbstractProject project = build.getProject();
-        StringBuilder combinationString = new StringBuilder();
-        if (this.statusTitle != null && !this.statusTitle.isEmpty()) {
-            wh.setTitle(env.expand(this.statusTitle));
-        } else {
-            wh.setTitle(project.getDisplayName() + " #" + build.getId());
+
+        String branchNameString = "\n";
+        String resolvedBranchName = resolveBranchName(env);
+        if (resolvedBranchName != null && !resolvedBranchName.isEmpty()) {
+            branchNameString += "**Branch:** `" + resolvedBranchName + "`\n";
         }
 
-        //Check if MatrixConfiguration
-        if (project instanceof MatrixConfiguration) {
-            wh.setTitle(project.getParent().getDisplayName() + " #" + build.getId());
-            combinationString.append("**Configuration matrix:**\n");
-            for (Map.Entry e : ((MatrixConfiguration) project).getCombination().entrySet())
-                combinationString.append(" - ").append(e.getKey()).append(": ").append(e.getValue()).append("\n");
+        String descriptionPrefix = "## Build `" + build.getId() + "` for " + project.getDisplayName();
+        long unixSeconds = Instant.now().getEpochSecond();
+        descriptionPrefix += branchNameString
+            + "**Published** <t:" + unixSeconds + ":f> - " + "<t:" + unixSeconds + ":R>\n";
+
+        if (build.getResult().equals(hudson.model.Result.FAILURE)) {
+            wh.setContent(env.expand("-# **BUILD FAILED <@&1179954304006750339>!**"));
+        } else if (build.getResult().equals(hudson.model.Result.SUCCESS) && successRole != null && !successRole.isEmpty()) {
+            wh.setContent(env.expand("-# **New build <@&" + successRole + ">!**"));
         }
 
-        String branchNameString = "";
-        if (branchName != null && !branchName.isEmpty()) {
-            branchNameString = "**Branch:** " + env.expand(branchName) + "\n";
-        }
+        String scmWebUrl = getGitUrl(project);
 
-        String descriptionPrefix;
-        // Adds links to the description and title if enableUrlLinking is enabled
-        if (this.enableUrlLinking) {
-            String url = globalConfig.getUrl() + build.getUrl();
-            descriptionPrefix = branchNameString
-                    + "**Build:** "
-                    + getMarkdownHyperlink(build.getId(), url)
-                    + "\n**Status:** "
-                    + getMarkdownHyperlink(build.getResult().toString().toLowerCase(Locale.ENGLISH), url) + "\n";
-            wh.setURL(url);
-        } else {
-            descriptionPrefix = branchNameString
-                    + "**Build:** "
-                    + build.getId()
-                    + "\n**Status:** "
-                    + build.getResult().toString().toLowerCase(Locale.ENGLISH) + "\n";
-        }
-        descriptionPrefix += combinationString;
+        wh.setCustomAvatarUrl("https://canvasmc.io/logo_512.png");
+        wh.setCustomUsername("CanvasBot");
+        wh.setThumbnail(thumbnailURL == null || thumbnailURL.isBlank() ? "https://canvasmc.io/logo_512.png" : thumbnailURL);
 
-        if (notes != null && !notes.isEmpty()) {
-            wh.setContent(env.expand(notes));
-        }
-
-        if (customAvatarUrl != null && !customAvatarUrl.isEmpty()) {
-            wh.setCustomAvatarUrl(customAvatarUrl);
-        }
-
-        if (customUsername != null && !customUsername.isEmpty()) {
-            wh.setCustomUsername(customUsername);
-        }
-
-        wh.setThumbnail(thumbnailURL);
         wh.setDescription(
-                new EmbedDescription(build, globalConfig, descriptionPrefix, this.enableArtifactList, this.showChangeset, this.scmWebUrl)
-                        .toString()
+            new EmbedDescription(build, globalConfig, descriptionPrefix, false, this.showChangeset, scmWebUrl, this.successRole)
+                .toString()
         );
 
         addDynamicFieldsToWebhook(dynamicFieldContainer, wh, env);
-        wh.setStatusByColor(resolveColor(listener, buildresult, successColor, unstableColor, failureColor));
+        wh.setStatusByColor(resolveColor(listener, buildresult, successColor, abortedColor, failureColor));
 
-        if (this.enableFooterInfo)
-            wh.setFooter("Jenkins v" + build.getHudsonVersion() + ", " + getDescriptor().getDisplayName() + " v" + getDescriptor().getPluginVersion());
+        String diffUrl = resolveGithubDiffUrl(build, scmWebUrl);
+        if (diffUrl != null) {
+            wh.addButton("View Diff", diffUrl);
+        }
+        wh.addButton("Click to Download", "https://canvasmc.io/downloads/");
 
         try {
             listener.getLogger().println("Sending notification to Discord.");
@@ -371,9 +303,119 @@ public class WebhookPublisher extends Notifier {
         return true;
     }
 
+    private String getGitUrl(AbstractProject project) {
+        hudson.scm.SCM scm = project.getScm();
+        if (scm == null || !scm.getClass().getName().equals("hudson.plugins.git.GitSCM")) {
+            return null;
+        }
+        try {
+            Object userRemoteConfigs = scm.getClass().getMethod("getUserRemoteConfigs").invoke(scm);
+            List<?> remotes = (List<?>) userRemoteConfigs;
+            if (remotes.isEmpty()) return null;
+            Object firstRemote = remotes.get(0);
+            return (String) firstRemote.getClass().getMethod("getUrl").invoke(firstRemote);
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
+    private String resolveBranchName(EnvVars env) {
+        if (branchName != null && !branchName.isEmpty()) {
+            return env.expand(branchName);
+        }
+
+        String[] candidateVars = {"BRANCH_NAME", "GIT_BRANCH", "CHANGE_BRANCH", "SVN_BRANCH"};
+        for (String var : candidateVars) {
+            String value = env.get(var);
+            if (value != null && !value.isEmpty()) {
+                if ("GIT_BRANCH".equals(var) && value.contains("/")) {
+                    value = value.substring(value.indexOf('/') + 1);
+                }
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    private String resolveGithubDiffUrl(AbstractBuild build, String scmWebUrl) {
+        if (scmWebUrl == null || scmWebUrl.isEmpty()) {
+            return null;
+        }
+        try {
+            hudson.scm.ChangeLogSet<? extends hudson.scm.ChangeLogSet.Entry> changeSet = build.getChangeSet();
+            if (changeSet == null || changeSet.isEmptySet()) {
+                return null;
+            }
+
+            Object[] entries = changeSet.getItems();
+            if (entries.length == 0) {
+                return null;
+            }
+
+            String base = normalizeGithubUrl(scmWebUrl);
+            if (base == null) {
+                return null;
+            }
+
+            String githubUrl;
+            if (entries.length == 1) {
+                String sha = ((hudson.scm.ChangeLogSet.Entry) entries[0]).getCommitId();
+                if (sha == null) {
+                    return null;
+                }
+                githubUrl = base + "/commit/" + sha;
+            } else {
+                hudson.scm.ChangeLogSet.Entry firstEntry = (hudson.scm.ChangeLogSet.Entry) entries[0];
+                hudson.scm.ChangeLogSet.Entry lastEntry = (hudson.scm.ChangeLogSet.Entry) entries[entries.length - 1];
+
+                String beforeSha = firstEntry.getCommitId();
+                String afterSha = lastEntry.getCommitId();
+
+                if (beforeSha == null || afterSha == null) {
+                    return null;
+                }
+
+                githubUrl = beforeSha.equals(afterSha)
+                    ? base + "/commit/" + afterSha
+                    : base + "/compare/" + beforeSha + ".." + afterSha;
+            }
+
+            return toDiffsDevUrl(githubUrl);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static String normalizeGithubUrl(String remoteUrl) {
+        String url = remoteUrl.trim();
+
+        if (url.startsWith("git@github.com:")) {
+            url = "https://github.com/" + url.substring("git@github.com:".length());
+        }
+
+        if (!url.contains("github.com")) {
+            return null;
+        }
+
+        if (url.endsWith(".git")) {
+            url = url.substring(0, url.length() - 4);
+        }
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+
+        return url;
+    }
+
+    public static String toDiffsDevUrl(String githubUrl) {
+        return "https://diffs.dev/?github_url="
+            + java.net.URLEncoder.encode(githubUrl, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     /**
      * Add all key value field pairs to the webhook
-    */
+     */
     private void addDynamicFieldsToWebhook(DynamicFieldContainer dynamicFieldContainer, DiscordWebhook wh, EnvVars env){
         // Early exit if we don't have any dynamicFieldContainer set
         if(dynamicFieldContainer == null){
@@ -389,16 +431,16 @@ public class WebhookPublisher extends Notifier {
      *
      * @param buildResult   the build result used to select the appropriate color bucket
      * @param successColor  custom hex/decimal color string for successful builds, or null/empty for default
-     * @param unstableColor custom hex/decimal color string for unstable builds, or null/empty for default
+     * @param abortedColor custom hex/decimal color string for aborted builds, or null/empty for default
      * @param failureColor  custom hex/decimal color string for failed builds, or null/empty for default
      * @return the resolved integer color code
      */
     private static int resolveColor(
-            BuildListener listener,
-            Result buildResult,
-            String successColor,
-            String unstableColor,
-            String failureColor
+        BuildListener listener,
+        Result buildResult,
+        String successColor,
+        String abortedColor,
+        String failureColor
     ) {
         String custom;
         String customFieldName;
@@ -406,23 +448,23 @@ public class WebhookPublisher extends Notifier {
         if (buildResult.isBetterOrEqualTo(Result.SUCCESS)) {
             custom = successColor;
             customFieldName = "successColor";
-            defaultColor = DiscordWebhook.StatusColor.GREEN;
+            defaultColor = DiscordWebhook.StatusColor.BLUE;
         } else if (buildResult.isWorseThan(Result.UNSTABLE)) {
             custom = failureColor;
             customFieldName = "failureColor";
             defaultColor = DiscordWebhook.StatusColor.RED;
         } else {
-            custom = unstableColor;
-            customFieldName = "unstableColor";
-            defaultColor = DiscordWebhook.StatusColor.YELLOW;
+            custom = abortedColor;
+            customFieldName = "abortedColor";
+            defaultColor = DiscordWebhook.StatusColor.GREY;
         }
         if (custom != null && !custom.isEmpty()) {
             try {
                 return DiscordWebhook.parseColor(custom);
             } catch (NumberFormatException e) {
                 listener.getLogger().println(
-                        "[Discord Notifier] Invalid " + customFieldName + " value '" + custom
-                                + "'. Using default color."
+                    "[Discord Notifier] Invalid " + customFieldName + " value '" + custom
+                        + "'. Using default color."
                 );
             }
         }

@@ -22,6 +22,7 @@ class DiscordWebhook {
     private JSONObject obj;
     private JSONObject embed;
     private JSONArray fields;
+    private JSONArray components;
     private InputStream file;
     private String filename;
 
@@ -34,7 +35,7 @@ class DiscordWebhook {
         /**
          * Green "you're sweet as" color.
          */
-        GREEN(1681177),
+        BLUE(1687548),
         /**
          * Yellow "go, but I'm watching you" color.
          */
@@ -42,7 +43,7 @@ class DiscordWebhook {
         /**
          * Red "something ain't right" color.
          */
-        RED(11278871),
+        RED(16336451),
         /**
          * Grey. Just grey.
          */
@@ -60,7 +61,7 @@ class DiscordWebhook {
 
     /**
      * Parses a color string into an integer color code.
-     * Accepts hex strings with or without a leading '#' (e.g. "#19A719" or "19A719"),
+     * Accepts hex strings with or without a leading '#' (e.g. "#19BFFC" or "19BFFC"),
      * as well as plain decimal integers (e.g. "1681177").
      *
      * @param colorStr the color string to parse
@@ -217,6 +218,19 @@ class DiscordWebhook {
         return this;
     }
 
+    public DiscordWebhook addButton(String label, String url) {
+        if (this.components == null) {
+            this.components = new JSONArray();
+        }
+        JSONObject button = new JSONObject();
+        button.put("type", 2);   // Button
+        button.put("style", 5);  // Link style
+        button.put("label", label);
+        button.put("url", url);
+        this.components.put(button);
+        return this;
+    }
+
     /**
      * Sets the embed's footer text.
      *
@@ -246,6 +260,13 @@ class DiscordWebhook {
 
         this.obj.put("embeds", new JSONArray().put(this.embed));
 
+        if (this.components != null && this.components.length() > 0) {
+            JSONObject actionRow = new JSONObject();
+            actionRow.put("type", 1);
+            actionRow.put("components", this.components);
+            this.obj.put("components", new JSONArray().put(actionRow));
+        }
+
         try {
             final Jenkins instance = Jenkins.getInstanceOrNull();
             if (instance != null && instance.proxy != null && !Unirest.config().isRunning()) {
@@ -255,16 +276,25 @@ class DiscordWebhook {
                     Unirest.config().proxy(new Proxy(proxyIP, proxyPort));
                 }
             }
+            // Plain "Incoming Webhook" integrations (the kind created from a Discord
+            // channel's Integrations settings) aren't tied to an application, so per
+            // Discord's docs the "components" field - and therefore any buttons - is
+            // silently dropped unless this query param is present. Harmless to always
+            // send it, even on messages with no buttons.
+            String requestUrl = this.webhookUrl
+                + (this.webhookUrl.contains("?") ? "&" : "?")
+                + "with_components=true";
+
             HttpResponse<JsonNode> response;
             if (file != null) {
-                response = Unirest.post(this.webhookUrl)
-                        .field("payload_json", obj.toString())
-                        .field("file", file, filename)
-                        .asJson();
+                response = Unirest.post(requestUrl)
+                    .field("payload_json", obj.toString())
+                    .field("file", file, filename)
+                    .asJson();
             } else {
-                response = Unirest.post(this.webhookUrl)
-                        .field("payload_json", obj.toString())
-                        .asJson();
+                response = Unirest.post(requestUrl)
+                    .field("payload_json", obj.toString())
+                    .asJson();
             }
 
             if (response.getStatus() < 200 || response.getStatus() >= 300) {

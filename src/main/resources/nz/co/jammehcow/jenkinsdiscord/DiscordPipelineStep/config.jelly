@@ -43,13 +43,10 @@
     <f:textbox />
   </f:entry>
   <f:entry title="Success color" field="successColor">
-    <f:textbox placeholder="#19A719" />
-  </f:entry>
-  <f:entry title="Unstable color" field="unstableColor">
-    <f:textbox placeholder="#FFFF0A" />
+    <f:textbox placeholder="#19BFFC" />
   </f:entry>
   <f:entry title="Failure color" field="failureColor">
-    <f:textbox placeholder="#AC1A17" />
+    <f:textbox placeholder="#F94643" />
   </f:entry>
   <f:entry title="Aborted color" field="abortedColor">
     <f:textbox placeholder="#CDCDCD" />

@@ -37,20 +37,19 @@ public class DiscordPipelineStep extends AbstractStepImpl {
     private String image;
     private String thumbnail;
     private String result;
-    private String notes;
+    private String successRole;
     private String customAvatarUrl;
     private String customUsername;
     private String customFile;
     private DynamicFieldContainer dynamicFieldContainer;
     private boolean successful;
-    private boolean unstable;
+    private boolean aborted;
     private boolean enableArtifactsList;
     private boolean showChangeset;
     private String scmWebUrl;
     private String successColor;
-    private String unstableColor;
-    private String failureColor;
     private String abortedColor;
+    private String failureColor;
 
     @DataBoundConstructor
     public DiscordPipelineStep(String webhookURL) {
@@ -106,13 +105,13 @@ public class DiscordPipelineStep extends AbstractStepImpl {
         this.successful = successful;
     }
 
-    public boolean isUnstable() {
-        return unstable;
+    public boolean isAborted() {
+        return aborted;
     }
 
     @DataBoundSetter
-    public void setUnstable(boolean unstable) {
-        this.unstable = unstable;
+    public void setAborted(boolean aborted) {
+        this.aborted = aborted;
     }
 
     @DataBoundSetter
@@ -143,12 +142,12 @@ public class DiscordPipelineStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
-    public void setNotes(String notes) {
-        this.notes = notes;
+    public void setSuccessRole(String successRole) {
+        this.successRole = successRole;
     }
 
-    public String getNotes() {
-        return notes;
+    public String getSuccessRole() {
+        return successRole;
     }
 
     @DataBoundSetter
@@ -214,13 +213,13 @@ public class DiscordPipelineStep extends AbstractStepImpl {
         this.successColor = successColor;
     }
 
-    public String getUnstableColor() {
-        return unstableColor;
+    public String getAbortedColor() {
+        return abortedColor;
     }
 
     @DataBoundSetter
-    public void setUnstableColor(String unstableColor) {
-        this.unstableColor = unstableColor;
+    public void setAbortedColor(String abortedColor) {
+        this.abortedColor = abortedColor;
     }
 
     public String getFailureColor() {
@@ -230,15 +229,6 @@ public class DiscordPipelineStep extends AbstractStepImpl {
     @DataBoundSetter
     public void setFailureColor(String failureColor) {
         this.failureColor = failureColor;
-    }
-
-    public String getAbortedColor() {
-        return abortedColor;
-    }
-
-    @DataBoundSetter
-    public void setAbortedColor(String abortedColor) {
-        this.abortedColor = abortedColor;
     }
 
     @DataBoundSetter
@@ -268,11 +258,11 @@ public class DiscordPipelineStep extends AbstractStepImpl {
             DiscordWebhook.StatusColor statusColor;
             statusColor = StatusColor.YELLOW;
             if (step.getResult() == null) {
-                if (step.isSuccessful()) statusColor = DiscordWebhook.StatusColor.GREEN;
-                if (step.isSuccessful() && step.isUnstable()) statusColor = DiscordWebhook.StatusColor.YELLOW;
-                if (!step.isSuccessful() && !step.isUnstable()) statusColor = DiscordWebhook.StatusColor.RED;
+                if (step.isSuccessful()) statusColor = DiscordWebhook.StatusColor.BLUE;
+                if (step.isSuccessful() && step.isAborted()) statusColor = DiscordWebhook.StatusColor.YELLOW;
+                if (!step.isSuccessful() && !step.isAborted()) statusColor = DiscordWebhook.StatusColor.RED;
             } else if (step.getResult().equals(Result.SUCCESS.toString())) {
-                statusColor = StatusColor.GREEN;
+                statusColor = StatusColor.BLUE;
             } else if (step.getResult().equals(Result.UNSTABLE.toString())) {
                 statusColor = StatusColor.YELLOW;
             } else if (step.getResult().equals(Result.FAILURE.toString())) {
@@ -284,7 +274,7 @@ public class DiscordPipelineStep extends AbstractStepImpl {
             }
 
             int resolvedColor = resolveColor(listener, statusColor,
-                    step.getSuccessColor(), step.getUnstableColor(),
+                    step.getSuccessColor(), step.getAbortedColor(),
                     step.getFailureColor(), step.getAbortedColor());
 
             DiscordWebhook wh = new DiscordWebhook(step.getWebhookURL());
@@ -301,7 +291,8 @@ public class DiscordPipelineStep extends AbstractStepImpl {
                                 step.getDescription(),
                                 step.getEnableArtifactsList(),
                                 step.getShowChangeset(),
-                                step.getScmWebUrl()
+                                step.getScmWebUrl(),
+                                step.successRole
                         ).toString()
                 );
             } else {
@@ -311,7 +302,7 @@ public class DiscordPipelineStep extends AbstractStepImpl {
             wh.setImage(step.getImage());
             wh.setFooter(checkLimitAndTruncate("footer", step.getFooter(), FOOTER_LIMIT));
             wh.setStatusByColor(resolvedColor);
-            wh.setContent(step.getNotes());
+            wh.setContent(step.getSuccessRole());
 
             if (step.getCustomAvatarUrl() != null) {
                 wh.setCustomAvatarUrl(step.getCustomAvatarUrl());
@@ -389,7 +380,7 @@ public class DiscordPipelineStep extends AbstractStepImpl {
             String custom;
             String customFieldName;
             switch (defaultColor) {
-                case GREEN:
+                case BLUE:
                     custom = successColor;
                     customFieldName = "successColor";
                     break;
